@@ -5,17 +5,18 @@ This is a FashionMNIST data reader to get train data and test data
 
 import os
 import struct
-import pathlib
+import cupy as cp
 import numpy as np
 from array import array
 
 
-class MNIST_Reader():
-    def __init__(self, train_scale: float=1.0, test_scale: float=1.0) -> None:
+class FashionMNIST_Reader():
+    def __init__(self, train_scale: float=1.0, test_scale: float=1.0, use_cuda: bool=False) -> None:
         """
         train_scale: get the scale of the train dataset, range from 0.0 to 1.0
         test_scale: get the scale of the test dataset, range from 0.0 to 1.0
         """
+        self.__use_cuda = use_cuda
         self.__train_scale, self.__test_scale = train_scale, test_scale
         self.__train_image_path = os.path.join(os.getcwd(), os.path.join('data/FashionMNIST', 'train-images-idx3-ubyte'))
         self.__train_label_path = os.path.join(os.getcwd(), os.path.join('data/FashionMNIST', 'train-labels-idx1-ubyte'))
@@ -45,14 +46,13 @@ class MNIST_Reader():
             img = img.reshape(28, 28)
             images[i][:] = img            
         
-        return np.array(images), np.array(labels)
+        if self.__use_cuda:
+            return cp.array(images), cp.array(labels)
+        else:
+            return np.array(images), np.array(labels)
 
     def load_data(self):
         train_X, train_Y = self.read_images_labels(self.__train_image_path, self.__train_label_path)
         test_X, test_Y = self.read_images_labels(self.__test_image_path, self.__test_label_path)
         train_N, test_N = int(train_X.shape[0]*self.__train_scale), int(test_X.shape[0]*self.__test_scale)
         return train_X[:train_N], train_Y[:train_N], test_X[:test_N], test_Y[:test_N]
-
-
-
-dataset = MNIST_Reader()
